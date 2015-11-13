@@ -9,7 +9,8 @@ setup(name='metnopy',
       license='MIT',
       packages=['metnopy'],
       install_requires=[
-          'pandas',
-          'requests'
+        'numpy',
+        'pandas',
+        'requests'
       ],
-      zip_safe=False)
+      zip_safe=True)

@@ -205,7 +205,7 @@ def get_met_data(timeserietypeid, stations, elements, from_date, to_date, hours,
                          function with one station at a time, and then merge the data frames later in the
                          preferred way
         elements (str) : List of elements to get. Ex. "TA,FF,DD,SA". See this url
-                         http://eklima.met.no/Help/Stations/toDay/all/en_e88660.html
+                         http://eklima.met.no/Help/Stations/toDay/all/en_e18700.html
                          for more information.
         from_date (str) : Start date. Ex. "2010-01-01"
         to_date (str) : End date. Ex. "2012-01-01"
