@@ -111,12 +111,13 @@ def get_xml_obs(timeserietypeid, stations, elements, from_date, to_date, hours, 
     return observations
 
 
-def xml_obs_to_dict(xml_observation, tz):
+def xml_obs_to_dict(xml_observation, tz, long_format=False):
     """ Transform xml object to dict
 
     Args:
         xml_observation (xml.etree.ElementTree.Element): Weather observation represented as an XML Element
         tz (pytz.timezone): A pytz timezone object defining which timezone to use
+        long_format (boolean): Specify whether you want to return the dataframe as wide or long format. Default is wide
 
     Returns:
         dict : Weather observation represented as a python dict
@@ -142,52 +143,76 @@ def xml_obs_to_dict(xml_observation, tz):
 
     for location in list(xml_observation):
 
-        observation_dict["Date"] = date
-
         weather_elements = list(location)
 
-        for el in weather_elements:
-            el_code = el.get("id")
+        if long_format:
+            observation_dict = {
+                "Date": [],
+                "St.no": [],
+                "Variable": [],
+                "Value": []
+            }
+            for el in weather_elements:
+                observation_dict["Date"].append(date)
+                observation_dict["St.no"].append(location.get("id"))
+                observation_dict["Variable"].append(el.get("id"))
+                if el[0].text == "-99999":
+                    observation_dict["Value"].append(np.nan)
+                else:
+                    observation_dict["Value"].append(el[0].text)
 
-            if multiple_locations:
-                el_code += "_" + location.get("id")
-            # Met API uses -99999 as default for NaN values
-            if el[0].text == "-99999":
-                observation_dict[el_code] = np.nan
-            else:
-                observation_dict[el_code] = el[0].text
+        else:
+            observation_dict["Date"] = date
+
+            for el in weather_elements:
+                el_code = el.get("id")
+
+                if multiple_locations:
+                    el_code += "_" + location.get("id")
+                # Met API uses -99999 as default for NaN values
+                if el[0].text == "-99999":
+                    observation_dict[el_code] = np.nan
+                else:
+                    observation_dict[el_code] = el[0].text
 
     return observation_dict
 
 
-def xml_observations_to_df(observations, tz):
+def xml_observations_to_df(observations, tz, long_format=False):
     """ Map weather observations from XML elements to python dicts readable by Pandas
 
     Args:
         observations (list(xml.etree.ElementTree.Element)) : A list with XML elements
         tz (pytz.timezone) : A pytz timezone object
+        long_format (boolean): Specify if returned data frame should be in long or wide format
 
     Returns:
         pandas.DataFrame : A data frame with weather observations
     """
 
-    observation_list = map(lambda obs: xml_obs_to_dict(obs, tz), observations)
+    observation_list = map(lambda obs: xml_obs_to_dict(obs, tz, long_format=long_format), observations)
 
-    weatherdf = pd.DataFrame(observation_list)
+    if long_format:
+        weatherdf = reduce(lambda x, y: x.append(y, ignore_index=True),
+                           map(lambda x: pd.DataFrame(x), observation_list))
+    else:
+        weatherdf = pd.DataFrame(observation_list)
 
-    if not weatherdf.empty:
-        weatherdf.set_index("Date", inplace=True)
+    if not long_format:
+        if not weatherdf.empty:
+            weatherdf.set_index("Date", inplace=True)
 
-        # Convert element types to float, int or whatever
-        for tp in WEATHER_ELEMENT_TYPES:
-            for code in tp[1]:
-                if code in weatherdf.columns:
-                    weatherdf[code] = weatherdf[code].apply(tp[0])
+            # Convert element types to float, int or whatever
+            for tp in WEATHER_ELEMENT_TYPES:
+                for code in tp[1]:
+                    if code in weatherdf.columns:
+                        weatherdf[code] = weatherdf[code].apply(tp[0])
 
     return weatherdf
 
 
-def get_met_data(timeserietypeid, stations, elements, from_date, to_date, hours, months, tz=pytz.timezone("UTC")):
+def get_met_data(timeserietypeid, stations, elements, from_date, to_date, hours, months, tz=pytz.timezone("UTC"),
+                 long_format=False):
     """ Returns a pandas data frame with met data found for the given parameters
 
     Please note that the dates and hours given in the query are in UTC, so if specify another timezone
@@ -211,8 +236,8 @@ def get_met_data(timeserietypeid, stations, elements, from_date, to_date, hours,
         to_date (str) : End date. Ex. "2012-01-01"
         hours (str) : String with hours from 0 - 23. Ex. "0,6,12,18". Use "" for all hours
         months (str) : String with months. Ex. "1,2,3,4,11,12". Use "" for all months
-        stations_as_column:
         tz (pytz.timezone) : A python timezone object. Default is UTC.
+        long_format (boolean): Specify whether returned data frame should be in long format. Default is false.
 
     Returns:
         pandas.DataFrame : Data frame with weather observations
@@ -230,25 +255,28 @@ def get_met_data(timeserietypeid, stations, elements, from_date, to_date, hours,
     # To avoid making too big queries, we spilt requests by station and year
     weather_df = pd.DataFrame()
 
+    # If long_format, we need to set ignore_index to true when putting the data frames together
+    ignore_index = long_format
+
     if from_date_year == to_date_year:
         tmp_xml_obs = get_xml_obs(timeserietypeid, stations, elements, from_date,
                                   to_date, hours, months)
-        tmp_df = xml_observations_to_df(tmp_xml_obs, tz)
+        tmp_df = xml_observations_to_df(tmp_xml_obs, tz, long_format=long_format)
         if weather_df.empty:
             weather_df = tmp_df
         else:
-            weather_df = weather_df.append(tmp_df)
+            weather_df = weather_df.append(tmp_df, ignore_index=ignore_index)
 
     else:
         # Get data for first year
         tmp_xml_obs = get_xml_obs(timeserietypeid, stations, elements, from_date,
                                   from_date_year+"-12-31", hours, months)
-        tmp_df = xml_observations_to_df(tmp_xml_obs, tz)
+        tmp_df = xml_observations_to_df(tmp_xml_obs, tz, long_format=long_format)
 
         if weather_df.empty:
             weather_df = tmp_df
         else:
-            weather_df = weather_df.append(tmp_df)
+            weather_df = weather_df.append(tmp_df, ignore_index=ignore_index)
 
         # Get data for years whole years in period given
         for year in range(int(from_date_year)+1, int(to_date_year)):
@@ -259,14 +287,14 @@ def get_met_data(timeserietypeid, stations, elements, from_date, to_date, hours,
             tmp_xml_obs = get_xml_obs(timeserietypeid, stations, elements,
                                       tmp_from_date, tmp_end_date, hours, months)
 
-            tmp_df = xml_observations_to_df(tmp_xml_obs, tz)
+            tmp_df = xml_observations_to_df(tmp_xml_obs, tz, long_format=long_format)
 
-            weather_df = weather_df.append(tmp_df)
+            weather_df = weather_df.append(tmp_df, ignore_index=ignore_index)
 
         # Get data for last year in query
         tmp_xml_obs = get_xml_obs(timeserietypeid, stations, elements, to_date_year+"-01-01",
                                   to_date, hours, months)
-        tmp_df = xml_observations_to_df(tmp_xml_obs, tz)
-        weather_df = weather_df.append(tmp_df)
+        tmp_df = xml_observations_to_df(tmp_xml_obs, tz, long_format=long_format)
+        weather_df = weather_df.append(tmp_df, ignore_index=ignore_index)
 
     return weather_df

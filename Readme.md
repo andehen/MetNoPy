@@ -42,6 +42,8 @@ where
  * **hours** (*str*): A comma separated string with hours (in UTC time!). Use empty string for all hours.
  * **months** (*str*): A comma separated string with months. Use empty string for all months
  * **tz** (*pytz.timezone*): Optional. Default is UTC, same as Met API. 
+ * **long_format** (*boolean*): Optional. Specifies format of returned dataframe. Default is False (wide format),
+   and for most cases this is the preferable format.
  
  The parameters are more or less passed directly to the [API](http://eklima.met.no/met/MetService?operation=getMetDataValues),
  except for **tz** which is only used internally to convert dates to the provided timezone. 
@@ -90,5 +92,23 @@ Date
 2015-06-13 13:00:00     18.8      9.5
 2015-06-14 13:00:00     17.5      7.7
 2015-06-15 13:00:00     16.5      6.8
+
+```
+
+#### Long format example
+
+Long format can be handy sometimes. The following example shows how the resulting dataframe looks like.
+
+```python
+In [1]: get_met_data("2", "68860", "TA, RR_12", "2015-12-06","2015-12-07", "6,18", "", long_format=True)
+
+Out[2]: 
+                 Date  St.no Value Variable
+0 2015-12-06 06:00:00  68860   3.0       TA
+1 2015-12-06 06:00:00  68860   0.0    RR_12
+2 2015-12-06 18:00:00  68860   2.5       TA
+3 2015-12-06 18:00:00  68860   2.3    RR_12
+4 2015-12-07 06:00:00  68860   4.0       TA
+5 2015-12-07 06:00:00  68860  11.3    RR_12
 
 ```
