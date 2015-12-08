@@ -15,6 +15,5 @@ class TestGetMetData(unittest.TestCase):
         self.assertEqual(response.index.time[0], time(1, 0))
 
     def test_get_met_data_long_format(self):
-        response = get_met_data("2", "18700, 68860", "TA, RR_12",
-                                "2015-12-06", "2015-12-07", "6,18", "", long_format=True)
-        self.assertEqual(response.shape, (6, 4))
+        response = get_met_data("2", "68860", "TA, RR_12", "2015-12-06","2015-12-06", "", "", long_format=True)
+        self.assertEqual(response.shape, (26, 4))

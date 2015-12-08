@@ -153,12 +153,10 @@ def xml_obs_to_dict(xml_observation, tz, long_format=False):
                 "Value": []
             }
             for el in weather_elements:
-                observation_dict["Date"].append(date)
-                observation_dict["St.no"].append(location.get("id"))
-                observation_dict["Variable"].append(el.get("id"))
-                if el[0].text == "-99999":
-                    observation_dict["Value"].append(np.nan)
-                else:
+                if el[0].text != "-99999":
+                    observation_dict["Date"].append(date)
+                    observation_dict["St.no"].append(location.get("id"))
+                    observation_dict["Variable"].append(el.get("id"))
                     observation_dict["Value"].append(el[0].text)
 
         else:
