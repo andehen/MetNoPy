@@ -20,7 +20,7 @@ WEATHER_ELEMENT_TYPES = [(float,
                            "SA", "RA", "RR_12", "RR_24",
                            "FF", "DD"]),
                          (int,
-                          ["St.no", "SD"])]
+                          ["st.no", "SD"])]
 
 
 class InvalidQueryException(Exception):
@@ -147,20 +147,20 @@ def xml_obs_to_dict(xml_observation, tz, long_format=False):
 
         if long_format:
             observation_dict = {
-                "Date": [],
-                "St.no": [],
-                "Variable": [],
-                "Value": []
+                "date": [],
+                "st.no": [],
+                "variable": [],
+                "value": []
             }
             for el in weather_elements:
                 if el[0].text != "-99999":
-                    observation_dict["Date"].append(date)
-                    observation_dict["St.no"].append(location.get("id"))
-                    observation_dict["Variable"].append(el.get("id"))
-                    observation_dict["Value"].append(el[0].text)
+                    observation_dict["date"].append(date)
+                    observation_dict["st.no"].append(location.get("id"))
+                    observation_dict["variable"].append(el.get("id"))
+                    observation_dict["value"].append(el[0].text)
 
         else:
-            observation_dict["Date"] = date
+            observation_dict["date"] = date
 
             for el in weather_elements:
                 el_code = el.get("id")
@@ -198,7 +198,7 @@ def xml_observations_to_df(observations, tz, long_format=False):
 
     if not long_format:
         if not weatherdf.empty:
-            weatherdf.set_index("Date", inplace=True)
+            weatherdf.set_index("date", inplace=True)
 
             # Convert element types to float, int or whatever
             for tp in WEATHER_ELEMENT_TYPES:
