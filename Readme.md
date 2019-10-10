@@ -1,6 +1,6 @@
 # MetNoPy
 
-**Disclaimer**: This package is still under development, so it may contain bugs or weird behaviour. 
+**Deprecated**: The API used by this package is deprecated. Use their improved API instead https://frost.met.no
 
 MetNoNpy is python package that can retrieve data from the Norwegian Meteorological Institute.
 More specifically it uses the API which you can use manually [here](http://eklima.met.no/met/MetService?operation=getMetDataValues).
@@ -15,7 +15,7 @@ Package is not ready for PyPi yet, but will be once it is stable.
 
 To install, run 
 ```
-pip install https://github.com/hennumjr/MetNoPy/archive/master.zip
+pip install https://github.com/andehen/MetNoPy/archive/master.zip
 ```
 
 or clone the project. 
